@@ -1,7 +1,0 @@
-{
-  "framework": "nextjs",
-  "installCommand": "npm install --legacy-peer-deps && npm install tailwindcss@3.4.15 autoprefixer@10.4.20 postcss@8.4.47",
-  "buildCommand": "npx prisma generate && npx next build",
-  "regions": ["iad1"]
-}
-
