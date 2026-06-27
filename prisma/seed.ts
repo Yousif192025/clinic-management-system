@@ -143,7 +143,7 @@ async function main() {
     { patientIdx: 3, doctorIdx: 1, daysOffset: 3, hour: 14, status: AppointmentStatus.SCHEDULED },
   ]
 
-  const appointments = []
+  const appointments: { id: string; scheduledAt: Date }[] = []
   for (let i = 0; i < appointmentData.length; i++) {
     const a = appointmentData[i]
     const date = new Date(now)
