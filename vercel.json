@@ -4,3 +4,4 @@
   "buildCommand": "npx prisma generate && npx next build",
   "regions": ["iad1"]
 }
+
