@@ -39,3 +39,8 @@ export const authOptions = {
   pages: { signIn: '/login', error: '/login' },
   secret: process.env.NEXTAUTH_SECRET,
 }
+
+export async function auth() {
+  const { getServerSession } = await import('next-auth')
+  return getServerSession(authOptions)
+}
