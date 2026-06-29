@@ -1,11 +1,10 @@
 import NextAuth from 'next-auth'
-import { PrismaAdapter } from '@auth/prisma-adapter'
 import CredentialsProvider from 'next-auth/providers/credentials'
+import { PrismaAdapter } from '@auth/prisma-adapter'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/db/prisma'
-import type { Role } from '@prisma/client'
 
-export const { handlers, signIn, signOut, auth } = NextAuth({
+export const authOptions = {
   adapter: PrismaAdapter(prisma),
   providers: [
     CredentialsProvider({
@@ -15,57 +14,28 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          throw new Error('البريد الإلكتروني وكلمة المرور مطلوبان')
-        }
-
+        if (!credentials?.email || !credentials?.password) return null
         const user = await prisma.user.findUnique({
           where: { email: credentials.email as string },
         })
-
-        if (!user || !user.password) {
-          throw new Error('بيانات الدخول غير صحيحة')
-        }
-
-        if (!user.isActive) {
-          throw new Error('الحساب غير مفعل. يرجى التواصل مع الإدارة')
-        }
-
+        if (!user || !user.password || !user.isActive) return null
         const isValid = await bcrypt.compare(credentials.password as string, user.password)
-        if (!isValid) {
-          throw new Error('بيانات الدخول غير صحيحة')
-        }
-
-        return {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          image: user.image,
-        }
+        if (!isValid) return null
+        return { id: user.id, name: user.name, email: user.email, role: user.role, image: user.image }
       },
     }),
   ],
-  session: { strategy: 'jwt' },
+  session: { strategy: 'jwt' as const },
   callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id
-        token.role = (user as { role: Role }).role
-      }
+    async jwt({ token, user }: { token: any; user: any }) {
+      if (user) { token.id = user.id; token.role = user.role }
       return token
     },
-    async session({ session, token }) {
-      if (token && session.user) {
-        session.user.id = token.id as string
-        session.user.role = token.role as Role
-      }
+    async session({ session, token }: { session: any; token: any }) {
+      if (token && session.user) { session.user.id = token.id; session.user.role = token.role }
       return session
     },
   },
-  pages: {
-    signIn: '/login',
-    error: '/login',
-  },
+  pages: { signIn: '/login', error: '/login' },
   secret: process.env.NEXTAUTH_SECRET,
-})
+}
