@@ -14,15 +14,55 @@ export const authOptions = {
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email as string },
-        })
-        if (!user || !user.password || !user.isActive) return null
-        const isValid = await bcrypt.compare(credentials.password as string, user.password)
-        if (!isValid) return null
-        return { id: user.id, name: user.name, email: user.email, role: user.role, image: user.image }
-      },
+  console.log('===== LOGIN START =====')
+  console.log('Credentials:', credentials)
+
+  if (!credentials?.email || !credentials?.password) {
+    console.log('Missing credentials')
+    return null
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { email: credentials.email as string },
+  })
+
+  console.log('User found:', !!user)
+
+  if (!user) {
+    console.log('User not found')
+    return null
+  }
+
+  console.log('isActive:', user.isActive)
+  console.log('Has password:', !!user.password)
+
+  if (!user.password || !user.isActive) {
+    console.log('Inactive user or missing password')
+    return null
+  }
+
+  const isValid = await bcrypt.compare(
+    credentials.password as string,
+    user.password
+  )
+
+  console.log('Password valid:', isValid)
+
+  if (!isValid) {
+    console.log('Wrong password')
+    return null
+  }
+
+  console.log('Login success')
+
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    image: user.image,
+  }
+}
     }),
   ],
   session: { strategy: 'jwt' as const },
