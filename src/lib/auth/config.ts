@@ -13,54 +13,31 @@ export const authOptions = {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
       },
-      async authorize(credentials) {
-  console.log('===== LOGIN START =====')
-  console.log('Credentials:', credentials)
+     async authorize(credentials) {
+  try {
+    console.log("LOGIN START")
 
-  if (!credentials?.email || !credentials?.password) {
-    console.log('Missing credentials')
-    return null
-  }
+    const user = await prisma.user.findUnique({
+      where: {
+        email: credentials?.email as string,
+      },
+    })
 
-  const user = await prisma.user.findUnique({
-    where: { email: credentials.email as string },
-  })
+    console.log(user)
 
-  console.log('User found:', !!user)
+    if (!user) return null
 
-  if (!user) {
-    console.log('User not found')
-    return null
-  }
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      image: user.image,
+    }
 
-  console.log('isActive:', user.isActive)
-  console.log('Has password:', !!user.password)
-
-  if (!user.password || !user.isActive) {
-    console.log('Inactive user or missing password')
-    return null
-  }
-
-  const isValid = await bcrypt.compare(
-    credentials.password as string,
-    user.password
-  )
-
-  console.log('Password valid:', isValid)
-
-  if (!isValid) {
-    console.log('Wrong password')
-    return null
-  }
-
-  console.log('Login success')
-
-  return {
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    role: user.role,
-    image: user.image,
+  } catch (e) {
+    console.error("AUTHORIZE ERROR:", e)
+    throw e
   }
 }
     }),
