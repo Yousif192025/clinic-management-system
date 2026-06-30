@@ -1,52 +1,68 @@
-import type { Metadata } from 'next'
-import { prisma } from '@/lib/db/prisma'
-import { auth } from '@/lib/auth/config'
-import { PatientsClient } from '@/components/patients/patients-client'
+import type { Metadata } from "next";
+import { prisma } from "@/lib/db/prisma";
+import { auth } from "@/lib/auth/config";
+import { redirect } from "next/navigation";
+import { PatientsTable } from "@/components/patients/patients-table";
 
-export const metadata: Metadata = { title: 'المرضى' }
+export const metadata: Metadata = {
+  title: "المرضى",
+};
 
-export default async function PatientsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ q?: string; page?: string; archived?: string }>
-}) {
-  const session = await auth()
-  const params = await searchParams
-  const search = params.q || ''
-  const page = Number(params.page || 1)
-  const archived = params.archived === 'true'
-  const perPage = 10
+export default async function PatientsPage() {
+  const session = await auth();
 
-  const where = {
-    isArchived: archived,
-    OR: search ? [
-      { user: { name: { contains: search, mode: 'insensitive' as const } } },
-      { patientCode: { contains: search, mode: 'insensitive' as const } },
-      { phone: { contains: search } },
-      { nationalId: { contains: search } },
-    ] : undefined,
+  if (!session) {
+    redirect("/login");
   }
 
-  const [patients, total] = await Promise.all([
-    prisma.patient.findMany({
-      where,
-      include: { user: { select: { name: true, email: true, image: true } } },
-      orderBy: { createdAt: 'desc' },
-      skip: (page - 1) * perPage,
-      take: perPage,
-    }),
-    prisma.patient.count({ where }),
-  ])
+  const patients = await prisma.patient.findMany({
+    where: {
+      isArchived: false,
+    },
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          isActive: true,
+        },
+      },
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+
+  const data = patients.map((patient) => ({
+    id: patient.id,
+    patientCode: patient.patientCode,
+    nationalId: patient.nationalId ?? "",
+    name: patient.user.name,
+    email: patient.user.email,
+    gender: patient.gender,
+    phone: patient.phone ?? "",
+    city: patient.city ?? "",
+    bloodType: patient.bloodType,
+    isActive: patient.user.isActive,
+    createdAt: patient.createdAt.toISOString(),
+  }));
 
   return (
-    <PatientsClient
-      patients={patients}
-      total={total}
-      page={page}
-      perPage={perPage}
-      search={search}
-      archived={archived}
-      canEdit={['ADMIN', 'RECEPTIONIST', 'NURSE'].includes(session!.user.role)}
-    />
-  )
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">
+            المرضى
+          </h1>
+
+          <p className="text-sm text-muted-foreground mt-1">
+            إدارة بيانات المرضى
+          </p>
+        </div>
+      </div>
+
+      <PatientsTable patients={data} />
+    </div>
+  );
 }
