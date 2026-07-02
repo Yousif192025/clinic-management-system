@@ -3,9 +3,11 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { signOut } from 'next-auth/react'
+import { useState } from 'react'
 import {
   LayoutDashboard, Users, UserRound, Calendar, FileText,
-  Receipt, BarChart3, Settings, LogOut, Heart, ChevronLeft, Shield
+  Receipt, BarChart3, Settings, LogOut, Heart, ChevronLeft,
+  Shield, Menu, X
 } from 'lucide-react'
 import { cn, getInitials, ROLE_MAP } from '@/lib/utils/helpers'
 import type { Role } from '@prisma/client'
@@ -35,20 +37,30 @@ interface SidebarProps {
 
 export function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname()
+  const [isOpen, setIsOpen] = useState(false)
 
   const visibleItems = navItems.filter(item => item.roles.includes(user.role))
 
-  return (
-    <aside className="w-64 flex-shrink-0 bg-sidebar flex flex-col border-l border-sidebar-border">
+  const SidebarContent = () => (
+    <div className="flex flex-col h-full">
       {/* Logo */}
-      <div className="flex items-center gap-3 px-5 py-5 border-b border-sidebar-border">
-        <div className="w-9 h-9 rounded-xl bg-sidebar-primary flex items-center justify-center flex-shrink-0">
-          <Heart className="w-5 h-5 text-sidebar-primary-foreground" />
+      <div className="flex items-center justify-between px-5 py-5 border-b border-sidebar-border">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-sidebar-primary flex items-center justify-center flex-shrink-0">
+            <Heart className="w-5 h-5 text-sidebar-primary-foreground" />
+          </div>
+          <div>
+            <p className="text-sm font-bold text-sidebar-foreground leading-tight">نظام إدارة</p>
+            <p className="text-xs text-sidebar-foreground/50">العيادات الطبية</p>
+          </div>
         </div>
-        <div>
-          <p className="text-sm font-bold text-sidebar-foreground leading-tight">نظام إدارة</p>
-          <p className="text-xs text-sidebar-foreground/50">العيادات الطبية</p>
-        </div>
+        {/* Close button on mobile */}
+        <button
+          onClick={() => setIsOpen(false)}
+          className="md:hidden p-1.5 rounded-lg hover:bg-sidebar-accent text-sidebar-foreground/70"
+        >
+          <X className="w-4 h-4" />
+        </button>
       </div>
 
       {/* Nav */}
@@ -62,12 +74,10 @@ export function Sidebar({ user }: SidebarProps) {
             <Link
               key={item.href}
               href={item.href}
-              className={cn(
-                'sidebar-item',
-                isActive && 'active'
-              )}
+              onClick={() => setIsOpen(false)}
+              className={cn('sidebar-item', isActive && 'active')}
             >
-              <Icon className="w-4.5 h-4.5 flex-shrink-0" />
+              <Icon className="w-4 h-4 flex-shrink-0" />
               <span>{item.label}</span>
               {isActive && <ChevronLeft className="w-3.5 h-3.5 mr-auto opacity-60" />}
             </Link>
@@ -94,6 +104,39 @@ export function Sidebar({ user }: SidebarProps) {
           <span>تسجيل الخروج</span>
         </button>
       </div>
-    </aside>
+    </div>
+  )
+
+  return (
+    <>
+      {/* Mobile Toggle Button */}
+      <button
+        onClick={() => setIsOpen(true)}
+        className="md:hidden fixed top-4 right-4 z-50 p-2 rounded-lg bg-sidebar text-sidebar-foreground shadow-lg border border-sidebar-border"
+      >
+        <Menu className="w-5 h-5" />
+      </button>
+
+      {/* Mobile Overlay */}
+      {isOpen && (
+        <div
+          className="md:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+
+      {/* Sidebar - Desktop */}
+      <aside className="hidden md:flex w-64 flex-shrink-0 bg-sidebar flex-col border-l border-sidebar-border">
+        <SidebarContent />
+      </aside>
+
+      {/* Sidebar - Mobile Drawer */}
+      <aside className={cn(
+        'md:hidden fixed top-0 right-0 z-50 h-full w-72 bg-sidebar flex flex-col border-l border-sidebar-border transition-transform duration-300',
+        isOpen ? 'translate-x-0' : 'translate-x-full'
+      )}>
+        <SidebarContent />
+      </aside>
+    </>
   )
 }
