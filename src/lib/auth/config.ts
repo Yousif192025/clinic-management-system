@@ -61,3 +61,4 @@ export async function auth() {
   const { getServerSession } = await import('next-auth')
   return getServerSession(authOptions)
 }
+export { authOptions }
