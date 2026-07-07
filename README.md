@@ -166,6 +166,7 @@ NEXTAUTH_URL=https://your-app.vercel.app
 
 ---
 
+
 ## 📄 الترخيص
 
 MIT License — حر الاستخدام للأغراض التجارية والشخصية.
